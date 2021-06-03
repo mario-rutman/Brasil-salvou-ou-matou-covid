@@ -1,0 +1,115 @@
+---
+title: "Quantos o Brasil 'matou por Covid' ou 'salvou da Covid'?"
+author: "Mário Rutman"
+date: ""
+output: 
+  html_document:
+    highlight: espresso
+    theme: united
+---
+#### `r paste("Atualizado em", format(Sys.Date(), '%d-%b-%Y'))`.
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readr)
+library(lubridate)
+library(forcats)
+library(DT)
+library(glue)
+
+
+Sys.setlocale(category = "LC_ALL")
+options(scipen = 999)
+
+# Carregando os dados no chunk global para poder ser compartilhada com todos usuários.
+
+# Lendo os arquivos necessários.
+mort_pop_tidy <- readRDS("mort_pop_tidy.rds")
+obitos_por_covid_brasil <- readRDS("obitos_por_covid_brasil.rds")
+
+# Mortes por Covid no Brasil/todos países.
+mortes_brasil <- mort_pop_tidy %>% 
+  dplyr::filter(pais == "Brazil") %>% 
+  dplyr::select(resultado) %>%
+  dplyr::mutate(resultado = round(resultado, 0)) %>% 
+  prettyNum(big.mark = ".")
+  
+
+
+# Baixando a fonte Ubuntu.
+library(showtext)
+# Loading Google fonts (https://fonts.google.com/)
+font_add_google("Ubuntu", "ubuntu")
+
+# Automatically use showtext to render text
+showtext_auto()
+```
+## {.tabset .tabset-pills}
+### __1. Dever de casa.__ 
+#### Não há mistério ou fórmula secreta. Se um aluno lê e escreve muito tenderá a ter boas notas em Redação. Se faz exercícios de Matemática, se sairá bem na matéria. Quando faz deveres de casa com afinco, fica acima da média. Se é relapso, fica abaixo.  Com a pandemia de Covid ocorre o mesmo. Se o país faz isolamento social, vacina, higieniza as mãos e usa máscara, a pandemia será atenuada, do contrário, mais luto do que o esperado.
+
+### __2. Morre-se de Covid de 2 maneiras.__
+#### Quando se classifica como pandemia  o rápido contágio de uma doença, fica subentendida a grande proporção do fenômeno e dos atingidos. Inevitalvemente os resultados serão funestos.
+#### Porém, mesmo diante de tal tragédia, a forma com reagem os países faz muita diferença. Podem atenuá-la ou agravá-la. Por isso entendo que morre-se de Covid de 2 maneiras.
+#### Do total de mortes uma parte é "de Covid", quando somos atingidos de forma letal pelo vírus; o restante é "por exposição desnecessária à Covid", quando o país não promove suficientemente as medidas para diminuir a circulação do vírus.
+#### É importante observar que também um país pode salvar da Covid, na medida em que reduz a velocidade de propagação do vírus.  
+#### É possível calcular quantos são salvos da Covid ou, por relapsia, sacrificados.
+
+### __3. Modo de calcular número de salvos ou mortos.__
+#### A linha que vou traçar para qualificar e quantificar a ação de um país em relação à pandemia é a media do conjunto de mortes por milhão de uma região. 
+#### O valor da diferença entre esta linha e o número de mortes por millhão de um país da mesma região nos permitirá calcular se houve resgate de vidas que se perderiam ou mortes por incompetência do país. O modo de calcular ficará claro por meio dos exemplos abaixo.
+#### Se na região R a media das mortes por milhão é 40 pessoas e no país X (da mesma região) morreram 35 pessoas por milhão então X salvou 5 pessoas por milhão $(40-35=5)$. 
+#### Se no país Y, da região R, morreram 53 pessoas por milhão, então Y matou 13 por milhão $(40-53=-13)$. O resultado negativo indica que o país matou por Covid.
+#### Se a população de X é 122.256.236 então direi que X salvou da covid 611 pessoas $(5*122.256.236/1.000.000=611)$. 
+#### Quanto a Y, cuja população é de 2.785.040, direi que matou por Covid 36 pessoas $(13*2.785.040/1.000.000=36)$ . 
+
+
+### __4. Salvos ou mortos de todos países.__
+#### A tabela abaixo indica, em relação a todos os países, a diferença entre a média por milhão e o número de mortes por milhão do país, se foi o caso de ter matado por Covid ou salvado e a quantidade de habitantes mortos ou salvos. 
+#### Em nosso país, acrescentamos `r mortes_brasil` cruzes à nossa história.
+
+```{r, echo=FALSE, message=FALSE, fig.height=4, fig.width=9}
+
+mort_pop_tidy %>% 
+  select(continente, pais, media_mortos_por_milhao, mortes_por_milhao, dif_media_mortes_por_milhao, matou_ou_salvou, resultado) %>% 
+  datatable(filter = 'top', 
+            caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: right;',
+    'fonte:', htmltools::em('https://www.worldometers.info/coronavirus/#countries')),
+              rownames = FALSE, class = 'cell-border stripe',
+              colnames = c("Continente", "País",
+                           "Média de mortes por milhão de todos países (A)",
+                           "Mortes por milhão (B)", 
+                           "Diferença entre A e B", "Matou ou salvou?", "Resultado"),
+    options = list(bPaginate = TRUE)) %>%
+  formatCurrency(c(3:5, 7),
+  currency = "",
+  interval = 3,
+  mark = ".",
+  digits = 0,
+  dec.mark = getOption("OutDec"),
+  before = TRUE) %>%
+  formatStyle(columns = 1:7, fontSize = '130%')
+
+```
+
+
+### __5. Brasil em diferentes cenários.__
+#### Diferentes conjuntos de países têm diferentes medias de mortos por milhão. Isto significa que tomado em continentes variados o mesmo país apresentará resultados diferentes. 
+>### Se considerássemos o Brasil um país da...
+
+```{r, echo=FALSE, message=FALSE, fig.height=4, fig.width=9}
+
+obitos_por_covid_brasil %>% 
+  datatable(filter = 'none', 
+            caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: right;',
+    'fonte:', htmltools::em('https://www.worldometers.info/coronavirus/#countries')),
+              rownames = FALSE, class = 'cell-border stripe',
+              colnames = c(""),
+              options = list(bPaginate = F)) %>%
+  formatStyle(columns = 1, fontSize = '140%')
+
+```
+
+>### __Conclusão:__ Em todos cenários o Brasil "matou por Covid", e muito. Não fez o dever de casa. Como um estudante negligente, repetirá de ano, década, século.   
