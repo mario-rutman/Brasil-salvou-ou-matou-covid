@@ -19,7 +19,7 @@ mort_pop_tidy <- mortes_populacao %>%
   # Traduzindo os nomes das colunas.
   dplyr::rename(pais = country_other, mortes = total_deaths,
                 populacao = population, continente = continent) %>% 
-  # Retirando as observações que não compõem a tabela.
+  # Mantendo somente as observações que compõem a tabela.
   dplyr::slice(c(9:230)) %>%
   # Retirando em mortes e população o que é NA ou "".
   dplyr::filter(!is.na(mortes), mortes != "", populacao != "") %>% 
@@ -31,15 +31,13 @@ mort_pop_tidy <- mortes_populacao %>%
   # Reposicionando a coluna continente.
   dplyr::select(continente, pais:populacao) %>% 
   # Criando a coluna que indica quantos morreram por milhão de pessoas.
-  dplyr::mutate(mortes_por_milhao = mortes * 1e6 / populacao) %>% 
-  # Calculando a diferença entre a mediana_das 
+  dplyr::mutate(mortes_por_milhao = mortes * 1e6 / populacao) %>%
+  # criando a coluna da média de mortos por milhão considerando todos países.
+  dplyr::mutate(media_mortos_por_milhao = mean(mortes_por_milhao)) %>% 
+  # Calculando a diferença entre a media das 
   # mortes por milhão e as mortes por milhao de um país.
   dplyr::mutate(dif_media_mortes_por_milhao = 
                   mean(mortes_por_milhao) - mortes_por_milhao) %>%
-  # Transformando a dif_mediana_mortes_por_milhao numa escala
-  # de 0 a 100.
-  # dplyr::mutate(escala_0_a_100 = 
-  #                 round((dif_mediana_mortes_por_milhao + 2800) * 100 / 3055, 1)) %>% 
   # Classificando se o país salvou ou matou.
   dplyr::mutate(matou_ou_salvou = 
                   dplyr::case_when(
@@ -83,10 +81,10 @@ resultado_covid <- function(regiao, lugar) {
     dplyr::select(mortes_por_milhao) %>% 
     dplyr::pull()
   
-  # A mediana do número de mortes por milhão considerando o Brasil um país de
+  # A media do número de mortes por milhão considerando o Brasil um país de
   # algum dos continentes.
-  mediana_regiao <- mort_pop_tidy %>%
-    # Filtrando ragião escolhida e retirando o Brasil
+  media_regiao <- mort_pop_tidy %>%
+    # Filtrando ragião escolhida e retirando o país escolhido para fazer a analise.
     dplyr::filter(continente == regiao, pais != lugar) %>%
     # Colando a linha Brasil à região escolhida.
     dplyr::bind_rows(pais) %>% 
@@ -96,7 +94,7 @@ resultado_covid <- function(regiao, lugar) {
     
   # Diferença entre a mediana do conjunto de mortos por milhão da região
   # e o número de mortos por milhão do país.
-  round((mediana_regiao - m_p_m_pais)/1e6 * pop_pais, 0) %>% 
+  round((media_regiao - m_p_m_pais)/1e6 * pop_pais, 0) %>% 
     abs()
 }
 
@@ -115,7 +113,7 @@ valores <- purrr::map2_dbl(cont, pais, resultado_covid)
 # Criando o tibble de onde será feita a tabela.
 library(glue)
 obitos_por_covid_brasil <- tibble::tibble(cont_traduzido, valores) %>% 
-  dplyr::mutate(frase = glue('...{cont_traduzido}, diríamos que "matou por Covid" {prettyNum(valores, big.mark = ".", decimal.mark = ",")} habitantes.')) %>% 
+  dplyr::mutate(frase = glue('{cont_traduzido}, diríamos que "matou por Covid" {prettyNum(valores, big.mark = ".", decimal.mark = ",")} habitantes.')) %>% 
   dplyr::select(frase)
 
 saveRDS(obitos_por_covid_brasil, "obitos_por_covid_brasil.rds")
