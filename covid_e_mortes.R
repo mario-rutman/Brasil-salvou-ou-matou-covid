@@ -67,30 +67,30 @@ saveRDS(mort_pop_tidy, "mort_pop_tidy.rds")
 
 resultado_covid <- function(regiao, lugar) {
   
-  # A observação, linha, sobre o Brasil
+  # A observação, linha, sobre o país.
   pais <- mort_pop_tidy %>% 
     dplyr::filter(pais == lugar)
   
-  # População do Brasil.
+  # População do país.
   pop_pais <- pais %>%
     dplyr::select(populacao) %>% 
     dplyr::pull()
   
-  # Mortes por milhão no Brasil.
+  # Mortes por milhão no país.
   m_p_m_pais <- pais %>% 
     dplyr::select(mortes_por_milhao) %>% 
     dplyr::pull()
   
-  # A media do número de mortes por milhão considerando o Brasil um país de
+  # A media do número de mortes por milhão considerando o país um país de
   # algum dos continentes.
   media_regiao <- mort_pop_tidy %>%
     # Filtrando ragião escolhida e retirando o país escolhido para fazer a analise.
     dplyr::filter(continente == regiao, pais != lugar) %>%
-    # Colando a linha Brasil à região escolhida.
+    # Colando a linha país à região escolhida.
     dplyr::bind_rows(pais) %>% 
-    # Calculando a mediana da região como se o Brasil pertencesse a ela. 
+    # Calculando a media da região como se o Brasil pertencesse a ela. 
     dplyr::pull(mortes_por_milhao) %>% 
-    median()
+    mean()
     
   # Diferença entre a mediana do conjunto de mortos por milhão da região
   # e o número de mortos por milhão do país.
@@ -99,8 +99,8 @@ resultado_covid <- function(regiao, lugar) {
 }
 
 # Criando os dois vetores para passar na função.
-pais <- rep("Brazil", 6)
-cont <- c("Europe", "South America", "North America", "Asia", "Africa",
+coluna_pais <- rep("Brazil", 6)
+coluna_cont <- c("Europe", "South America", "North America", "Asia", "Africa",
                  "Australia/Oceania")
 
 # Traduzindo o vetor cont.
@@ -108,14 +108,15 @@ cont_traduzido <- c("Europa", "América do Sul", "América do Norte",
                     "Ásia", "África", "Austrália/Oceania")
 
 # Passando os vetores na função.
-valores <- purrr::map2_dbl(cont, pais, resultado_covid) 
+valores <- purrr::map2_dbl(coluna_cont, coluna_pais, resultado_covid) 
 
 # Criando o tibble de onde será feita a tabela.
 library(glue)
 obitos_por_covid_brasil <- tibble::tibble(cont_traduzido, valores) %>% 
+  dplyr::arrange(valores) %>% 
   dplyr::mutate(frase = glue('{cont_traduzido}, diríamos que "matou por Covid" {prettyNum(valores, big.mark = ".", decimal.mark = ",")} habitantes.')) %>% 
   dplyr::select(frase)
-
+  
 saveRDS(obitos_por_covid_brasil, "obitos_por_covid_brasil.rds")
 
 
